@@ -373,7 +373,7 @@ test_f2 = test_f %>% mutate(prediction_forest = predict(forest, newdata = test_f
 ```
 
 ```{r}
-test_f2 = test_f %>% mutate(Transported = ifelse(prediction_forest == 1, 
+test_f2 = test_f2 %>% mutate(Transported = ifelse(prediction_forest == 1, 
                                                  "True", "False"))
 ```
 
