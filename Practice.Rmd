@@ -354,6 +354,35 @@ test_f = test_f %>% mutate(prediction =
 submission = test_f %>% select(PassengerId, Transported)
 ```
 ```{r}
-write.csv(submission, file="submission.csv", row.names=FALSE)
+#write.csv(submission, file="submission.csv", row.names=FALSE)
 ```
 
+\pagebreak
+
+## Test using Random Forest Model
+
+```{r}
+forest = randomForest(as.factor(NewTransported) ~ HomePlanet+CryoSleep+Destination+VIP+
+              NewAge_Final+NewSpa_Final+NewFoodCourt_final+VRDeck_final+
+              RoomService_final+ShoppingMall_final, ntree=500, importance=TRUE,
+            data = train_f)
+varImpPlot(forest)
+```
+```{r}
+test_f2 = test_f %>% mutate(prediction_forest = predict(forest, newdata = test_f))
+```
+
+```{r}
+test_f2 = test_f %>% mutate(Transported = ifelse(prediction_forest == 1, 
+                                                 "True", "False"))
+```
+
+```{r}
+submission_forest = test_f2 %>% select(PassengerId, Transported)
+```
+
+```{r}
+#write.csv(submission_forest, file = "submission2.csv", row.names = FALSE)
+```
+
+Our Random Forest Model had ~0.3% higher accuracy than our logistic regression model.
