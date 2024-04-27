@@ -1,7 +1,8 @@
 ---
-title: "Practice"
-output: html_document
-date: "2024-04-27"
+title: "Space Titantic: Kaggle Prediction Model"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -21,6 +22,7 @@ library(simputation)
 library(naniar)
 ```
 
+## Pre-Processing
 
 ```{r}
 train = read.csv("train.csv")
@@ -32,6 +34,8 @@ test = read.csv("test.csv")
 ```{r}
 miss_var_summary(train)
 ```
+
+## Imputing all NA Values in Missing Variables
 
 ```{r}
 imp_age = lm(Age~ShoppingMall+VRDeck+FoodCourt+Spa+RoomService+HomePlanet+
@@ -175,8 +179,9 @@ train_f = subset(train2, select = -c(Age,RoomService,FoodCourt,
                                      sm_pred,Newsm, Transported))
 ```
 
+\pagebreak
 
-
+## Creating Logistic Regression Model using Imputed Data
 
 ```{r}
 logit = glm(NewTransported ~ HomePlanet+CryoSleep+Destination+VIP+
@@ -190,8 +195,11 @@ p = predict(logit, type = "response")
 roc_logit = roc(train_f$NewTransported ~ p)
 auc(roc_logit)
 ```
+
+
 \pagebreak
 
+# Processing Test Data
 ```{r}
 imp_age = lm(Age~ShoppingMall+VRDeck+FoodCourt+Spa+RoomService+HomePlanet+
                CryoSleep+Destination+VIP, data=test)
@@ -331,7 +339,9 @@ test_f = subset(test2, select = -c(Age,RoomService,FoodCourt,
                                      sm_pred,Newsm))
 ```
 
+\pagebreak
 
+## Predicting Test Data 
 ```{r}
 test_f = test_f %>% mutate(prediction =
                               predict(logit, type = "response", newdata = test_f)) %>%
