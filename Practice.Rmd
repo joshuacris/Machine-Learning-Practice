@@ -1,0 +1,349 @@
+---
+title: "Practice"
+output: html_document
+date: "2024-04-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+library(tidyverse)
+library(knitr)
+library(lubridate)
+library(rpart)
+library(pROC)
+library(rattle)
+library(randomForest)
+library(ggplot2)
+library(simputation)
+library(naniar)
+```
+
+
+```{r}
+train = read.csv("train.csv")
+```
+```{r}
+test = read.csv("test.csv")
+```
+
+```{r}
+miss_var_summary(train)
+```
+
+```{r}
+imp_age = lm(Age~ShoppingMall+VRDeck+FoodCourt+Spa+RoomService+HomePlanet+
+               CryoSleep+Destination+VIP, data=train)
+summary(imp_age)
+```
+
+```{r}
+train2 = train %>% mutate(Age_pred = predict(imp_age,newdata=train))
+```
+```{r}
+train2=train2 %>%mutate(NewAge = case_when(is.na(Age) ~ round(Age_pred, digits = 0),
+                                           TRUE ~ Age))
+```
+```{r}
+train2 = train2 %>% mutate(NewAge_Final = case_when(is.na(NewAge) ~ 
+                                                      round(mean(NewAge, na.rm=T), digits=0)
+                                                    , TRUE ~ NewAge))
+```
+```{r}
+imp_spa = lm(Spa~ShoppingMall+VRDeck+FoodCourt+Age+RoomService+HomePlanet+
+               CryoSleep+Destination+VIP, data=train)
+summary(imp_spa)
+```
+```{r}
+train2 = train2 %>% mutate(Spa_pred = predict(imp_spa,newdata=train2))
+```
+```{r}
+train2=train2 %>%mutate(NewSpa = case_when(is.na(Spa) ~ round(Spa_pred, digits = 0),
+                                           TRUE ~ Spa))
+```
+```{r}
+train2 = train2 %>% mutate(NewSpa_Final = case_when(is.na(NewSpa) ~ 
+                                                      round(mean(NewSpa, na.rm=T), digits=0)
+                                                    , TRUE ~ NewSpa))
+```
+
+
+```{r}
+imp_foodcourt = lm(FoodCourt~ShoppingMall+VRDeck+Age+Spa+RoomService+HomePlanet+
+               CryoSleep+Destination+VIP, data=train)
+summary(imp_foodcourt)
+```
+```{r}
+train2 = train2 %>% mutate(foodcourt_pred = predict(imp_foodcourt,newdata=train2))
+```
+```{r}
+train2=train2 %>%mutate(NewFoodCourt = case_when(is.na(FoodCourt) ~
+                                                   round(foodcourt_pred, digits = 0),
+                                           TRUE ~ FoodCourt))
+```
+```{r}
+train2 = train2 %>% mutate(NewFoodCourt_final = case_when(is.na(NewFoodCourt) ~ 
+                                                      round(mean(NewFoodCourt, na.rm=T)
+                                                            , digits=0)
+                                                    , TRUE ~ NewFoodCourt))
+```
+
+
+
+
+
+
+
+```{r}
+imp_VR = lm(VRDeck~ShoppingMall+Spa+FoodCourt+Age+RoomService+HomePlanet+
+               CryoSleep+Destination+VIP, data=train)
+summary(imp_VR)
+```
+```{r}
+train2 = train2 %>% mutate(vr_pred = predict(imp_VR,newdata=train2))
+```
+```{r}
+train2=train2 %>%mutate(NewVR = case_when(is.na(VRDeck) ~
+                                                   round(vr_pred, digits = 0),
+                                           TRUE ~ VRDeck))
+```
+```{r}
+train2 = train2 %>% mutate(VRDeck_final = case_when(is.na(NewVR) ~ 
+                                                      round(mean(NewVR, na.rm=T)
+                                                            , digits=0)
+                                                    , TRUE ~ NewVR))
+```
+
+
+
+```{r}
+imp_RS = lm(RoomService~ShoppingMall+VRDeck+FoodCourt+Age+Spa+HomePlanet+
+               CryoSleep+Destination+VIP, data=train)
+summary(imp_RS)
+```
+
+```{r}
+train2 = train2 %>% mutate(rs_pred = predict(imp_RS,newdata=train2))
+```
+```{r}
+train2=train2 %>%mutate(Newrs = case_when(is.na(RoomService) ~
+                                                   round(rs_pred, digits = 0),
+                                           TRUE ~ RoomService))
+```
+```{r}
+train2 = train2 %>% mutate(RoomService_final = case_when(is.na(Newrs) ~ 
+                                                      round(mean(Newrs, na.rm=T)
+                                                            , digits=0)
+                                                    , TRUE ~ Newrs))
+```
+
+
+```{r}
+imp_sm = lm(ShoppingMall~RoomService+VRDeck+FoodCourt+Age+Spa+HomePlanet+
+               CryoSleep+Destination+VIP, data=train)
+summary(imp_sm)
+```
+
+
+```{r}
+train2 = train2 %>% mutate(sm_pred = predict(imp_sm,newdata=train2))
+```
+```{r}
+train2=train2 %>%mutate(Newsm = case_when(is.na(ShoppingMall) ~
+                                                   round(sm_pred, digits = 0),
+                                           TRUE ~ ShoppingMall))
+```
+```{r}
+train2 = train2 %>% mutate(ShoppingMall_final = case_when(is.na(Newsm) ~ 
+                                                      round(mean(Newsm, na.rm=T)
+                                                            , digits=0)
+                                                    , TRUE ~ Newsm))
+```
+```{r}
+train2 = train2 %>% mutate(NewTransported = ifelse(Transported == "True", 1, 0))
+```
+
+
+```{r}
+train_f = subset(train2, select = -c(Age,RoomService,FoodCourt,
+                                     ShoppingMall,Spa,VRDeck,
+                                     Age_pred,NewAge,Spa_pred,NewSpa,
+                                     foodcourt_pred,NewFoodCourt,
+                                     vr_pred,NewVR,rs_pred,Newrs,
+                                     sm_pred,Newsm, Transported))
+```
+
+
+
+
+```{r}
+logit = glm(NewTransported ~ HomePlanet+CryoSleep+Destination+VIP+
+              NewAge_Final+NewSpa_Final+NewFoodCourt_final+VRDeck_final+
+              RoomService_final+ShoppingMall_final, family = binomial,
+            data = train_f)
+summary(logit)
+```
+```{r}
+p = predict(logit, type = "response")
+roc_logit = roc(train_f$NewTransported ~ p)
+auc(roc_logit)
+```
+\pagebreak
+
+```{r}
+imp_age = lm(Age~ShoppingMall+VRDeck+FoodCourt+Spa+RoomService+HomePlanet+
+               CryoSleep+Destination+VIP, data=test)
+summary(imp_age)
+```
+
+```{r}
+test2 = test %>% mutate(Age_pred = predict(imp_age,newdata=test))
+```
+```{r}
+test2=test2 %>%mutate(NewAge = case_when(is.na(Age) ~ round(Age_pred, digits = 0),
+                                           TRUE ~ Age))
+```
+```{r}
+test2 = test2 %>% mutate(NewAge_Final = case_when(is.na(NewAge) ~ 
+                                                      round(mean(NewAge, na.rm=T), digits=0)
+                                                    , TRUE ~ NewAge))
+```
+```{r}
+imp_spa = lm(Spa~ShoppingMall+VRDeck+FoodCourt+Age+RoomService+HomePlanet+
+               CryoSleep+Destination+VIP, data=test)
+summary(imp_spa)
+```
+```{r}
+test2 = test2 %>% mutate(Spa_pred = predict(imp_spa,newdata=test2))
+```
+```{r}
+test2=test2 %>%mutate(NewSpa = case_when(is.na(Spa) ~ round(Spa_pred, digits = 0),
+                                           TRUE ~ Spa))
+```
+```{r}
+test2 = test2 %>% mutate(NewSpa_Final = case_when(is.na(NewSpa) ~ 
+                                                      round(mean(NewSpa, na.rm=T), digits=0)
+                                                    , TRUE ~ NewSpa))
+```
+
+
+```{r}
+imp_foodcourt = lm(FoodCourt~ShoppingMall+VRDeck+Age+Spa+RoomService+HomePlanet+
+                     CryoSleep+Destination+VIP, data=test)
+summary(imp_foodcourt)
+```
+```{r}
+test2 = test2 %>% mutate(foodcourt_pred = predict(imp_foodcourt,newdata=test2))
+```
+```{r}
+test2=test2 %>%mutate(NewFoodCourt = case_when(is.na(FoodCourt) ~
+                                                   round(foodcourt_pred, digits = 0),
+                                                 TRUE ~ FoodCourt))
+```
+```{r}
+test2 = test2 %>% mutate(NewFoodCourt_final = case_when(is.na(NewFoodCourt) ~ 
+                                                            round(mean(NewFoodCourt, na.rm=T)
+                                                                  , digits=0)
+                                                          , TRUE ~ NewFoodCourt))
+```
+
+
+
+
+
+
+
+```{r}
+imp_VR = lm(VRDeck~ShoppingMall+Spa+FoodCourt+Age+RoomService+HomePlanet+
+              CryoSleep+Destination+VIP, data=test)
+summary(imp_VR)
+```
+```{r}
+test2 = test2 %>% mutate(vr_pred = predict(imp_VR,newdata=test2))
+```
+```{r}
+test2=test2 %>%mutate(NewVR = case_when(is.na(VRDeck) ~
+                                            round(vr_pred, digits = 0),
+                                          TRUE ~ VRDeck))
+```
+```{r}
+test2 = test2 %>% mutate(VRDeck_final = case_when(is.na(NewVR) ~ 
+                                                      round(mean(NewVR, na.rm=T)
+                                                            , digits=0)
+                                                    , TRUE ~ NewVR))
+```
+
+
+
+```{r}
+imp_RS = lm(RoomService~ShoppingMall+VRDeck+FoodCourt+Age+Spa+HomePlanet+
+              CryoSleep+Destination+VIP, data=test)
+summary(imp_RS)
+```
+
+```{r}
+test2 = test2 %>% mutate(rs_pred = predict(imp_RS,newdata=test2))
+```
+```{r}
+test2=test2 %>%mutate(Newrs = case_when(is.na(RoomService) ~
+                                            round(rs_pred, digits = 0),
+                                          TRUE ~ RoomService))
+```
+```{r}
+test2 = test2 %>% mutate(RoomService_final = case_when(is.na(Newrs) ~ 
+                                                           round(mean(Newrs, na.rm=T)
+                                                                 , digits=0)
+                                                         , TRUE ~ Newrs))
+```
+
+
+```{r}
+imp_sm = lm(ShoppingMall~RoomService+VRDeck+FoodCourt+Age+Spa+HomePlanet+
+              CryoSleep+Destination+VIP, data=test)
+summary(imp_sm)
+```
+
+
+```{r}
+test2 = test2 %>% mutate(sm_pred = predict(imp_sm,newdata=test2))
+```
+```{r}
+test2=test2 %>%mutate(Newsm = case_when(is.na(ShoppingMall) ~
+                                            round(sm_pred, digits = 0),
+                                          TRUE ~ ShoppingMall))
+```
+```{r}
+test2 = test2 %>% mutate(ShoppingMall_final = case_when(is.na(Newsm) ~ 
+                                                            round(mean(Newsm, na.rm=T)
+                                                                  , digits=0)
+                                                          , TRUE ~ Newsm))
+```
+
+
+```{r}
+test_f = subset(test2, select = -c(Age,RoomService,FoodCourt,
+                                     ShoppingMall,Spa,VRDeck,
+                                     Age_pred,NewAge,Spa_pred,NewSpa,
+                                     foodcourt_pred,NewFoodCourt,
+                                     vr_pred,NewVR,rs_pred,Newrs,
+                                     sm_pred,Newsm))
+```
+
+
+```{r}
+test_f = test_f %>% mutate(prediction =
+                              predict(logit, type = "response", newdata = test_f)) %>%
+  mutate(Transported = case_when(prediction>0.5~"True",
+                                 TRUE ~"False") )
+```
+
+
+```{r}
+submission = test_f %>% select(PassengerId, Transported)
+```
+```{r}
+write.csv(submission, file="submission.csv", row.names=FALSE)
+```
+
